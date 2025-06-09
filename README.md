@@ -4,7 +4,7 @@
 > 6 + 1 files in total
 > <sup>Needed double checking for verification</sup>
 
-## C++ files coded by @ARandomRui & @notxenonforce
+## C++ files coded by @ARandomRui
 > 6 + 1 files in total
 > <sup>needed double checking for verification</sup>
 
