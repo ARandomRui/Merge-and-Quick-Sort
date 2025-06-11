@@ -1,28 +1,24 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <chrono>
-
+#include <bits/stdc++.h> 
+/*Libraries: iostream, fstream, string, vector, sstream
+NOTE: PLEASE USE G++ COMPILER OR U MIGHT NOT RUN THIS PROGRAM*/
 using namespace std;
 
-string filename = "merge_sort";
-int printout_count = 0;
-
 vector<string> split(const string& str) {
-    vector<string> lines;
+    vector<string> parts;
     stringstream ss(str);
-    string line_part;
-
-    while (getline(ss, line_part, ',')) {
-        lines.push_back(line_part);
-    }
-
-    return lines;
+    string part;
+    
+    // Get the integer part before the first comma
+    getline(ss, part, ',');
+    parts.push_back(part); 
+    
+    // Get the string part (rest of the line)
+    getline(ss, part);     
+    parts.push_back(part);
+    return parts;
 }
 
-vector<vector<string>> read_dataset(int start, int end, const string& filename = "dataset_1000000.csv") {
+vector<vector<string>> read_dataset(const string& filename) {
     vector<vector<string>> lines;
     ifstream file(filename);
     
@@ -32,18 +28,15 @@ vector<vector<string>> read_dataset(int start, int end, const string& filename =
     }
 
     string line;
-    int count = 0;
     while (getline(file, line)) {
-        count++;
-        if (line.empty()) {  // Skip empty lines although it should not happen
+        if (line.empty()) { // Skip empty lines
             continue;
         }
-        if (count >= start) {
-            vector<string> line_split = split(line);
+        vector<string> line_split = split(line);
+        if (line_split.size() == 2) { // Ensure line has both integer and string
             lines.push_back(line_split);
-        }
-        if (count >= end) {
-            break;
+        } else {
+            cerr << "Warning: Skipping malformed line: " << line << endl;
         }
     }
 
@@ -51,92 +44,113 @@ vector<vector<string>> read_dataset(int start, int end, const string& filename =
     return lines;
 }
 
-void save_dataset(vector<vector<string>> &dataset) {
-    ofstream file(filename);  // open file in write mode
-    for (int i = 0; i < dataset.size()-1; i++) {
-        file << dataset[i][0] << "," << dataset[i][1] << endl;
-    }
-    file << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1];
+void save_dataset(const vector<vector<string>>& dataset, const string& output_filename) {
+    ofstream file(output_filename); // open file in write mode
 
-    file.close(); 
+    if (!file.is_open()) {
+        cerr << "Error: Could not open output file " << output_filename << endl;
+        return;
+    }
+
+    for (size_t i = 0; i < dataset.size(); ++i) {
+        file << dataset[i][0] << "," << dataset[i][1];
+        if (i < dataset.size() - 1) { // Add newline for all but the last line
+            file << endl;
+        }
+    }
+    file.close();
 }
 
 void merge(vector<vector<string>> &dataset, int left, int mid, int right) {
-    vector<vector<string>> L(dataset.begin() + left, dataset.begin() + mid + 1);
-    vector<vector<string>> R(dataset.begin() + mid + 1, dataset.begin() + right + 1);
-    int k = left, L_int = 0, R_int = 0;
-    while (L.size() > L_int && R.size() > R_int) {
-        if (stoi(L[L_int][0]) < stoi(R[R_int][0])){
-            dataset[k] = L[L_int];
-            L_int++;
-        }
-        else{
-            dataset[k] = R[R_int];
-            R_int++;
+    // Create temporary arrays for the two halves
+    vector<vector<string>> L_half;
+    for (int i = left; i <= mid; ++i) {
+        L_half.push_back(dataset[i]);
+    }
+    vector<vector<string>> R_half;
+    for (int i = mid + 1; i <= right; ++i) {
+        R_half.push_back(dataset[i]);
+    }
+
+    int i = 0, j = 0, k = left;
+
+    while (i < L_half.size() && j < R_half.size()) {
+        // Compare based on integer value (first element of the pair)
+        if (stoi(L_half[i][0]) <= stoi(R_half[j][0])){ 
+            dataset[k] = L_half[i];
+            i++;
+        } else {
+            dataset[k] = R_half[j];
+            j++;
         }
         k++;
     }
-    while (L.size() > L_int) { //fill the dataset with the left vector if still have elements
-        dataset[k++] = L[L_int];
-        L_int++;
-    }       
-    while (R.size() > R_int) { //same here
-        dataset[k++] = R[R_int];
-        R_int++;
-    }
 
-    //save_dataset_step(dataset); 
-    if (printout_count %1000== 0) {
-        cout << "Printout count: " << printout_count << endl;
+    // Copy the remaining elements of L_half[], if any
+    while (i < L_half.size()) {
+        dataset[k] = L_half[i];
+        i++;
+        k++;
     }
-    printout_count++;
+    // Copy the remaining elements of R_half[], if any
+    while (j < R_half.size()) {
+        dataset[k] = R_half[j];
+        j++;
+        k++;
+    }
 }
 
+// The recursive merge_sort function
 void merge_sort(vector<vector<string>> &dataset, int left, int right) {
-    if (left < right){  //left is basically the start, 0 and right is the end, so in 
+    if (left < right){//left is basically the start, 0 and right is the end, so in 
                         //most of the case right will always be bigger than
                         //left.. unless they're equal due to the mid equation
-        int mid = (left + right)/2;  //so if its X.5 it becomes X 5/2 = 2 
+        int mid = left + (right - left) / 2; //so if its X.5 it becomes X 5/2 = 2 
         merge_sort(dataset, left, mid);
-        merge_sort(dataset, mid+1, right);
+        merge_sort(dataset, mid + 1, right);
         merge(dataset, left, mid, right);
     }
-    
 }
 
-
 int main() {
+    string dataset_input_filename;
+    cout << "Enter dataset filename (e.g., dataset_1000000.csv): ";
+    cin >> dataset_input_filename;
 
-    // Ask user to read from which line till which line
-    int start, end;
-    cout << "Enter the starting line: ";
-    cin >> start;
-    cout << "Enter the ending line: ";
-    cin >> end;
-
-    // Read the dataset and put it into a vector
-    vector<vector<string>> dataset = read_dataset(start,end);
+    // Read the dataset
+    vector<vector<string>> dataset = read_dataset(dataset_input_filename);
     
-    // Print the total number of lines read
-    cout << "Lines Captured: " << dataset.size() << endl;
-    
-    // Print starting and ending lines
-    cout << "\nDataset starting from line:" << dataset[0][0] << "," << dataset[0][1] << endl;
-    cout << "Dataset ending at line:" << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1] << endl;
+    if (dataset.empty()) {
+        cerr << "No data read. Exiting." << endl;
+        return 1;
+    }
 
-    filename = "merge_sort_" + to_string(dataset.size()) + ".csv";
+    // Prepare output filename (e.g., merge_sort_1000000.csv)
+    // Find the position of "dataset_" and ".csv" to replace dynamically
+    string output_filename_base = dataset_input_filename;
+    size_t dataset_pos = output_filename_base.find("dataset_");
+    if (dataset_pos != string::npos) {
+        output_filename_base.replace(dataset_pos, string("dataset_").length(), "merge_sort_");
+    } else {
+        // Fallback if "dataset_" is not found, just prepend "merge_sort_"
+        output_filename_base = "merge_sort_" + output_filename_base;
+    }
+    string output_filename = output_filename_base; // This will likely be "merge_sort_N.csv"
 
+    cout << "Dataset size: " << dataset.size() << " elements." << endl;
+
+    // Measure running time
     auto start_timer = chrono::high_resolution_clock::now();
 
-
-    merge_sort(dataset, 0, dataset.size()-1);
+    merge_sort(dataset, 0, dataset.size() - 1);
 
     auto end_timer = chrono::high_resolution_clock::now();
-
     auto duration = chrono::duration_cast<chrono::milliseconds>(end_timer - start_timer);
-    cout << "Running time: " << duration.count() << " ms" << endl;
+    cout << "Merge sort running time: " << duration.count() << " ms" << endl;
 
-    save_dataset(dataset);
+    // Save the sorted dataset
+    save_dataset(dataset, output_filename);
+    cout << "Sorted data saved to " << output_filename << endl;
 
     return 0;
-} 
+}

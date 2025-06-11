@@ -1,28 +1,44 @@
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <sstream>
-#include <chrono>
-
+#include <bits/stdc++.h> 
+/*Libraries: iostream, fstream, string, vector, sstream
+NOTE: PLEASE USE G++ COMPILER OR U MIGHT NOT RUN THIS PROGRAM*/
 using namespace std;
 
-string filename = "quick_sort";
-int printout_count = 0;
+ofstream step_output_file;
 
-vector<string> split(const string& str) {
-    vector<string> lines;
-    stringstream ss(str);
-    string line_part;
-
-    while (getline(ss, line_part, ',')) {
-        lines.push_back(line_part);
+string format_element(const vector<string>& element) {
+    if (element.size() == 2) {
+        return element[0] + "/" + element[1];
     }
-
-    return lines;
+    return "INVALID_FORMAT"; // Should not happen with correctly parsed input
 }
 
-vector<vector<string>> read_dataset(int start, int end, const string& filename = "dataset_1000000.csv") {
+void print_dataset_state(const vector<vector<string>>& dataset_slice) {
+    step_output_file << "[";
+    for (size_t i = 0; i < dataset_slice.size(); ++i) {
+        step_output_file << format_element(dataset_slice[i]);
+        if (i < dataset_slice.size() - 1) {
+            step_output_file << ", ";
+        }
+    }
+    step_output_file << "]\n";
+}
+
+vector<string> split(const string& str) {
+    vector<string> parts;
+    stringstream ss(str);
+    string part;
+    
+    // Get the integer part before the first comma
+    getline(ss, part, ',');
+    parts.push_back(part); 
+    
+    // Get the string part (rest of the line)
+    getline(ss, part);     
+    parts.push_back(part);
+    return parts;
+}
+
+vector<vector<string>> read_dataset_slice(int start, int end, const string& filename) {
     vector<vector<string>> lines;
     ifstream file(filename);
     
@@ -32,17 +48,21 @@ vector<vector<string>> read_dataset(int start, int end, const string& filename =
     }
 
     string line;
-    int count = 0;
+    int current_line_num = 0;
     while (getline(file, line)) {
-        count++;
-        if (line.empty()) {  // Skip empty lines although it should not happen
+        current_line_num++;
+        if (line.empty()) { // Skip empty lines
             continue;
         }
-          if (count >= start) {
+        if (current_line_num >= start && current_line_num <= end) {
             vector<string> line_split = split(line);
-            lines.push_back(line_split);
+            if (line_split.size() == 2) { // Ensure line has both integer and string
+                lines.push_back(line_split);
+            } else {
+                cerr << "Warning: Skipping malformed line " << current_line_num << ": " << line << endl;
+            }
         }
-        if (count >= end) {
+        if (current_line_num > end) { // Stop reading after the end line
             break;
         }
     }
@@ -51,93 +71,81 @@ vector<vector<string>> read_dataset(int start, int end, const string& filename =
     return lines;
 }
 
-void save_dataset_step(vector<vector<string>> &dataset, int pi = -1) {
-    ofstream file(filename, ios::app);  // open file in append mode
-    if (pi != -1) {
-        file << "Pi: " << pi << " ";
-    }
-    file << "[";
-    for (int i = 0; i < dataset.size() - 1; i++) {
-        file << dataset[i][0] << "/" << dataset[i][1] << ", ";
-    }
-    file << dataset[dataset.size() - 1][0] << "/" << dataset[dataset.size() - 1][1];
-    file << "]" << endl;
+int partition(vector<vector<string>> &dataset, int low, int high) {
+    // Pivot is the last element's integer value
+    int pivot_val = stoi(dataset[high][0]);
+    int i = (low - 1); // Index of smaller element
 
-    file.close(); 
+    for (int j = low; j < high; j++) {
+        // If current element is smaller than or equal to pivot
+        if (stoi(dataset[j][0]) <= pivot_val) {
+            i++; // Increment index of smaller element
+            // Swap elements
+            swap(dataset[i], dataset[j]);
+        }
+    }
+    // Swap pivot to its correct position
+    swap(dataset[i + 1], dataset[high]);
+
+    // Record the array state after partitioning
+    // Match Python's format: "pi = X" then the array state
+    step_output_file << "pi = " << (i + 1) << "\n";
+    print_dataset_state(dataset);
+
+    return i + 1; // Return the partitioning index
 }
 
-int partition(vector<vector<string>> &dataset, int left, int right) {
-    vector<vector<string>> L, E, G;
-    int p = stoi(dataset[right][0]);  // Pivot is the last element
-    cout << "Pivot: " << p << endl;
-    int e;
-    for (int i = left; i < right; i++) {
-        e = stoi(dataset[i][0]);
-        if (e < p)
-            L.push_back(dataset[i]);
-        else if (e == p)
-            E.push_back(dataset[i]);
-        else
-            G.push_back(dataset[i]);
-    }
-    E.push_back(dataset[right]); //put back the pivot to the last element
-
-    // Put everything back into S in order: L + E + G
-
-    int index = left;
-    for (const auto& item : L)
-        dataset[index++] = item;
-
-
-    int pi = index; // Start of E
-
-    // Copy E
-    for (const auto& item : E)
-        dataset[index++] = item;
-
-    // Copy G
-    for (const auto& item : G)
-        dataset[index++] = item;
-
-    save_dataset_step(dataset,pi);
-    return pi; // pivot index in the new S
-}
-
-void quick_sort(vector<vector<string>> &dataset, int left, int right) {
-    if (left < right){  //left is basically the start, 0 and right is the end, so in 
-                        //most of the case right will always be bigger than
-                        //left.. unless they're equal due to the mid equation 
-        int pi = partition(dataset, left, right);
-        quick_sort(dataset, left, pi-1);
-        quick_sort(dataset, pi+1, right);
+// The recursive quick_sort function
+void quick_sort_steps(vector<vector<string>> &dataset, int low, int high) {
+    if (low < high){
+        int pi = partition(dataset, low, high); // Partitioning index
+        quick_sort_steps(dataset, low, pi - 1);       // Sort elements before partition
+        quick_sort_steps(dataset, pi + 1, high);      // Sort elements after partition
     }
 }
 
 
 int main() {
+    string dataset_input_filename;
+    int start_row, end_row;
 
-    // Ask user to read from which line till which line
-    int start, end;
-    cout << "Enter the starting line: ";
-    cin >> start;
-    cout << "Enter the ending line: ";
-    cin >> end;
+    cout << "Enter the dataset filename (e.g., dataset_sample_1000.csv): ";
+    cin >> dataset_input_filename;
 
-    // Read the dataset and put it into a vector
-    vector<vector<string>> dataset = read_dataset(start,end);
+    cout << "Enter the starting row for the slice (e.g., 1): ";
+    cin >> start_row;
+    cout << "Enter the ending row for the slice (e.g., 7): ";
+    cin >> end_row;
+
+    // Read the specified slice from the user-provided filename
+    vector<vector<string>> dataset_slice = read_dataset_slice(start_row, end_row, dataset_input_filename);
     
-    // Print the total number of lines read
-    cout << "Lines Captured: " << dataset.size() << endl;
+    if (dataset_slice.empty()) {
+        cerr << "No data read or file not found. Exiting." << endl;
+        return 1;
+    }
+
+    // Construct the output filename as required
+    string output_filename = "quick_sort_step_" + to_string(start_row) + "_" + to_string(end_row) + ".txt";
+    step_output_file.open(output_filename); // Open the global file stream
+
+    if (!step_output_file.is_open()) {
+        cerr << "Error: Could not open output file " << output_filename << endl;
+        return 1;
+    }
+
+    cout << "Lines Captured: " << dataset_slice.size() << endl;
+    cout << "\nInitial Dataset Slice will be printed as the first step.\n";
     
-    // Print starting and ending lines
-    cout << "\nDataset starting from line:" << dataset[0][0] << "," << dataset[0][1] << endl;
-    cout << "Dataset ending at line:" << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1] << endl;
+    // Print the initial state of the dataset slice as the first step
+    print_dataset_state(dataset_slice);
 
-    filename = "quick_sort_step" + to_string(start) + "_" + to_string(end) + ".csv";
+    // Perform quick sort on the slice. The partition function will handle printing steps.
+    quick_sort_steps(dataset_slice, 0, dataset_slice.size() - 1);
+    
+    cout << "\nQuick sort steps saved to " << output_filename << endl;
 
-    save_dataset_step(dataset);
-
-    quick_sort(dataset,0,dataset.size()-1);
+    step_output_file.close(); // Close the output file after all steps are written
 
     return 0;
-} 
+}
