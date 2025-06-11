@@ -1,7 +1,7 @@
 # ALGORITHM DATA ANALYSIS ASSIGNMENT
 
 ## Python files coded by @jackodinn
-> merge_sort.py            ✅
+> merge_sort.py            ✅</br>
 > merge_sort_step.py       ✅
 > quick_sort.py            ✅
 > quick_sort_step.py       ✅
