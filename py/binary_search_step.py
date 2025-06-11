@@ -33,7 +33,7 @@ def binary_search_step(arr, target, steps_list):
         else:
             high = mid - 1
             
-    steps_list.append("-1") # Target not found [cite: 44]
+    steps_list.append("-1") # Target not found 
     return -1 # Target not found
 
 if __name__ == "__main__":

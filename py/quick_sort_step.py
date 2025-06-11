@@ -31,7 +31,7 @@ def quick_sort_steps(arr, low, high, steps_list):
 
 def partition(arr, low, high, steps_list):
     """
-    Partitions the array using the last element as pivot[cite: 6].
+    Partitions the array using the last element as pivot
     Records the array state after partitioning.
     """
     pivot = arr[high][0] # Pivot based on integer value
@@ -45,13 +45,13 @@ def partition(arr, low, high, steps_list):
     arr[i + 1], arr[high] = arr[high], arr[i + 1] # Place pivot in correct position
 
     # Record the array state after partitioning
-    steps_list.append(f"pi = {i+1}") # Indicate pivot index [cite: 42]
+    steps_list.append(f"pi = {i+1}") # Indicate pivot index
     steps_list.append(list(arr)) # Append a copy of the array state
 
     return i + 1
 
 if __name__ == "__main__":
-    dataset_filename = "dataset_sample_1000.csv" 
+    dataset_filename = input("Enter dataset filename (e.g., dataset_1000000.csv): ")
     start_row = int(input("Enter start row (e.g., 1): "))
     end_row = int(input("Enter end row (e.g., 7): ")) 
 

@@ -2,6 +2,7 @@ import csv
 import time
 
 def read_dataset(filename):
+    """Reads a slice of the dataset, returning a list of (int, str) tuples."""
     data = []
     with open(filename, 'r') as f:
         reader = csv.reader(f)
@@ -11,18 +12,24 @@ def read_dataset(filename):
     return data
 
 def write_sorted_data(filename, sorted_data):
+    """Writes the sorting steps to a file."""
     with open(filename, 'w', newline='') as f:
         writer = csv.writer(f)
         for item in sorted_data:
             writer.writerow(item)
 
 def quick_sort(arr, low, high):
+    """Performs quick sort on array."""
     if low < high:
         pi = partition(arr, low, high)
         quick_sort(arr, low, pi - 1)
         quick_sort(arr, pi + 1, high)
 
 def partition(arr, low, high):
+    """
+    Partitions the array using the last element as pivot
+    Records the array state after partitioning.
+    """
     pivot = arr[high][0] # Pivot based on integer value
     i = (low - 1)
     
@@ -40,14 +47,14 @@ if __name__ == "__main__":
 
     data = read_dataset(dataset_filename)
     
-    start_time = time.perf_counter() # Exclude I/O time [cite: 14]
+    start_time = time.perf_counter() # Exclude I/O time 
     # Create a mutable copy for sorting as quick_sort modifies in-place
     data_to_sort = list(data)
     quick_sort(data_to_sort, 0, len(data_to_sort) - 1)
     end_time = time.perf_counter()
 
     running_time = end_time - start_time
-    print(f"Quick sort running time: {running_time:.6f} seconds") # Print running time [cite: 22]
+    print(f"Quick sort running time: {running_time:.6f} seconds") # Print running time
 
     # Dynamically set the output filename based on input filename
     output_filename = f"{output_filename_base}.csv"

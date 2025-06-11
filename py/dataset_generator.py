@@ -31,7 +31,7 @@ def generate_dataset(size, filename):
 
 if __name__ == "__main__":
     # Example usage for demo
-    # The lecturer may specify a different size, e.g., 1000000 [cite: 39]
+    # The lecturer may specify a different size, e.g., 1000000 
     dataset_size = int(input("Enter dataset size (e.g., 1000000): "))
     output_filename = f"dataset_{dataset_size}.csv"
     generate_dataset(dataset_size, output_filename)

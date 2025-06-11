@@ -85,7 +85,7 @@ def run_multiple_searches(arr, num_searches):
     results["worst_case_time"] = sum(worst_times) / len(worst_times) if worst_times else 0.0
 
 
-    # Measure average case by performing N searches [cite: 22]
+    # Measure average case by performing N searches 
     total_avg_time = 0.0
     for target in average_case_targets:
         start_time = time.perf_counter()
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     dataset_filename = input("Enter sorted dataset filename (e.g., merge_sort_1000000.csv): ")
 
     data = read_sorted_dataset(dataset_filename)
-    n_searches = len(data) # Perform n searches where n is dataset size [cite: 22]
+    n_searches = len(data) # Perform n searches where n is dataset size 
 
     # Handle cases where n is very small (e.g., less than 10 for meaningful stats)
     if n_searches < 100 and n_searches > 0: # Ensure enough searches for a reasonable average
@@ -113,7 +113,7 @@ if __name__ == "__main__":
 
     results = run_multiple_searches(data, n_searches)
 
-    output_filename = f"binary_search_{len(data)}.txt" # Use dataset size for filename [cite: 22]
+    output_filename = f"binary_search_{len(data)}.txt" 
     with open(output_filename, 'w') as f:
         f.write(f"Binary Search Performance for {len(data)} elements:\n")
         f.write(f"Best Case Time: {results['best_case_time']:.9f} seconds\n")

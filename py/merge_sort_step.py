@@ -68,9 +68,9 @@ def merge(left, right):
     return result
 
 if __name__ == "__main__":
-    dataset_filename = "dataset_sample_1000.csv" # Provided sample dataset
-    start_row = int(input("Enter start row (e.g., 1): ")) # Lecturer specifies 
-    end_row = int(input("Enter end row (e.g., 7): ")) # Lecturer specifies 
+    dataset_filename = input("Enter dataset filename (e.g., dataset_1000000.csv): ")
+    start_row = int(input("Enter start row (e.g., 1): "))  
+    end_row = int(input("Enter end row (e.g., 7): ")) 
 
     initial_data_slice = read_dataset_slice(dataset_filename, start_row, end_row)
    
