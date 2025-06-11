@@ -54,9 +54,9 @@ vector<vector<string>> read_dataset(int start, int end, const string& filename =
 void save_dataset(vector<vector<string>> &dataset) {
     ofstream file(filename);  // open file in write mode
     for (int i = 0; i < dataset.size()-1; i++) {
-        file << dataset[i][0] << "/" << dataset[i][1] << endl;
+        file << dataset[i][0] << "," << dataset[i][1] << endl;
     }
-    file << dataset[dataset.size()-1][0] << "/" << dataset[dataset.size()-1][1];
+    file << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1];
 
     file.close(); 
 }
