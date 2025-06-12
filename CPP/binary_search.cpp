@@ -1,115 +1,197 @@
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <vector>
 #include <sstream>
-#include <chrono>
+#include <vector>
+#include <string>
+#include <utility>      // For std::pair
+#include <chrono>       // For timing
+#include <random>       // For random number generation
+#include <numeric>      // For std::accumulate
+#include <iomanip>      // For std::fixed and std::setprecision
 
-using namespace std;
+// Define type aliases for clarity, similar to Python's structure
+using DataRow = std::pair<int, std::string>;
+using DataSet = std::vector<DataRow>;
 
-string filename_output = "binary_search";
-int printout_count = 0;
+// A struct to hold the benchmark results
+struct SearchResults {
+    double best_case_time;
+    double worst_case_time;
+    double average_case_time;
+};
 
-vector<string> split(const string& str) {
-    vector<string> lines;
-    stringstream ss(str);
-    string line_part;
+/**
+ * @brief Reads a sorted dataset from a CSV file.
+ * @param filename The name of the file to read.
+ * @return A vector of (int, string) pairs.
+ */
+DataSet read_sorted_dataset(const std::string& filename) {
+    DataSet data;
+    std::ifstream file(filename);
+    std::string line;
 
-    while (getline(ss, line_part, '/')) {
-        lines.push_back(line_part);
-    }
-
-    return lines;
-}
-
-vector<vector<string>> read_dataset(string &file_name) {
-    vector<vector<string>> lines;
-    ifstream file(file_name);
-    
     if (!file.is_open()) {
-        cerr << "Error: Could not open file " << file_name << endl;
-        return lines;
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return data;
     }
 
-    string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
 
-    while (getline(file, line)) {
-        if (line.empty()) {  // Skip empty lines although it should not happen
-            continue;
+        std::stringstream ss(line);
+        std::string key_str, value;
+        
+        // Split the line by the comma
+        if (std::getline(ss, key_str, ',') && std::getline(ss, value)) {
+            try {
+                data.emplace_back(std::stoi(key_str), value);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Warning: Could not convert '" << key_str << "' to int. Skipping row." << std::endl;
+            }
         }
-        vector<string> line_split = split(line);
-        lines.push_back(line_split);
     }
-
     file.close();
-    return lines;
+    return data;
 }
 
+/**
+ * @brief Performs a single binary search on the dataset.
+ * @param arr The sorted dataset.
+ * @param target The integer key to search for.
+ * @return The index of the target, or -1 if not found.
+ */
+int binary_search(const DataSet& arr, int target) {
+    int low = 0;
+    int high = arr.size() - 1;
 
+    while (low <= high) {
+        int mid = low + (high - low) / 2; // Avoids potential overflow
+        int current_key = arr[mid].first;
 
-void binary_search(vector<vector<string>> &dataset, int target) {
-    int left = 0;
-    int right = dataset.size() - 1;
-    int mid;
-    int checkint;
-    while (left <= right) {
-        mid = (left + right) / 2;
-        checkint = stoi(dataset[mid][0]);
-        if (checkint == target) {
-            cout << "Target found at index: " << mid << endl;
-            return;
-        }
-        else if (checkint < target) {
-            left = mid + 1;
-        }
-        else {
-            right = mid - 1;
+        if (current_key == target) {
+            return mid;
+        } else if (current_key < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
         }
     }
+    return -1;
 }
 
+/**
+ * @brief Performs multiple binary searches to measure average time for different cases.
+ * @param arr The sorted dataset.
+ * @param num_searches The number of searches to perform for the average case.
+ * @return A SearchResults struct with the timing information.
+ */
+SearchResults run_multiple_searches(const DataSet& arr, int num_searches) {
+    SearchResults results = {0.0, 0.0, 0.0};
+    size_t n = arr.size();
+
+    if (n == 0) {
+        return results;
+    }
+
+    // --- Best Case: Target is the middle element ---
+    int best_case_target = arr[n / 2].first;
+    auto start = std::chrono::high_resolution_clock::now();
+    binary_search(arr, best_case_target);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> best_duration = end - start;
+    results.best_case_time = best_duration.count();
+
+    // --- Worst Case: Target at ends or non-existent ---
+    std::vector<int> worst_case_targets;
+    worst_case_targets.push_back(arr[0].first);            // Smallest element
+    worst_case_targets.push_back(arr[n - 1].first);      // Largest element
+    worst_case_targets.push_back(arr[0].first - 1);        // Non-existent (smaller)
+    worst_case_targets.push_back(arr[n - 1].first + 1);    // Non-existent (larger)
+    
+    double total_worst_time = 0.0;
+    for (int target : worst_case_targets) {
+        start = std::chrono::high_resolution_clock::now();
+        binary_search(arr, target);
+        end = std::chrono::high_resolution_clock::now();
+        total_worst_time += std::chrono::duration<double>(end - start).count();
+    }
+    results.worst_case_time = total_worst_time / worst_case_targets.size();
+
+    // --- Average Case: Randomly selected targets ---
+    // Setup modern C++ random number generator
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_int_distribution<> distrib(0, n - 1);
+    std::uniform_int_distribution<> value_distrib(arr[0].first, arr[n-1].first);
+
+    std::vector<int> average_case_targets;
+    average_case_targets.reserve(num_searches);
+    
+    for (int i = 0; i < num_searches; ++i) {
+        average_case_targets.push_back(arr[distrib(gen)].first);
+    }
+    // Add 10% non-existent targets
+    for (int i = 0; i < num_searches / 10; ++i) {
+        int random_non_existent = value_distrib(gen);
+        // This simple check is usually sufficient for large datasets.
+        // A perfect check would involve ensuring it's not in the dataset.
+        if (binary_search(arr, random_non_existent) != -1) {
+            i--; // try again
+        } else {
+             average_case_targets.push_back(random_non_existent);
+        }
+    }
+
+    double total_avg_time = 0.0;
+    for (int target : average_case_targets) {
+        start = std::chrono::high_resolution_clock::now();
+        binary_search(arr, target);
+        end = std::chrono::high_resolution_clock::now();
+        total_avg_time += std::chrono::duration<double>(end - start).count();
+    }
+    results.average_case_time = total_avg_time / average_case_targets.size();
+
+    return results;
+}
 
 int main() {
+    std::string dataset_filename;
+    std::cout << "Enter sorted dataset filename (e.g., merge_sort_1000000.csv): ";
+    std::cin >> dataset_filename;
 
-    //Enter file name
-    string file_name;
-    cout << "Enter the file name: ";
-    cin >> file_name;
-
-    // Read the dataset and put it into a vector
-    vector<vector<string>> dataset = read_dataset(file_name);
-
-    if (dataset.empty()) {
-        cerr << "Error: Dataset is empty." << endl;
+    DataSet data = read_sorted_dataset(dataset_filename);
+    if (data.empty()) {
+        std::cout << "Dataset is empty or could not be read. Exiting." << std::endl;
         return 1;
     }
     
-    // Print the total number of lines read
-    cout << "Lines Captured: " << dataset.size() << endl;
+    int n_searches = data.size();
+
+    // Handle cases where n is very small for meaningful stats
+    if (n_searches < 100 && n_searches > 0) {
+        std::cout << "Dataset is too small to get meaningful average/worst case times by performing n searches. Adjusting n_searches to 1000 for demonstration." << std::endl;
+        n_searches = 1000;
+    }
+
+    SearchResults results = run_multiple_searches(data, n_searches);
+
+    std::string output_filename = "binary_search_" + std::to_string(data.size()) + ".txt";
+    std::ofstream outfile(output_filename);
+
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open output file " << output_filename << std::endl;
+        return 1;
+    }
+
+    outfile << std::fixed << std::setprecision(9);
+    outfile << "Binary Search Performance for " << data.size() << " elements:\n";
+    outfile << "Best Case Time: " << results.best_case_time << " seconds\n";
+    outfile << "Average Case Time (over " << n_searches << " searches): " << results.average_case_time << " seconds\n";
+    outfile << "Worst Case Time: " << results.worst_case_time << " seconds\n";
     
-    // Print starting and ending lines
-    cout << "\nDataset starting from line:" << dataset[0][0] << "," << dataset[0][1] << endl;
-    cout << "Dataset ending at line:" << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1] << endl;
+    outfile.close();
 
-    filename_output = "binary_search_" + to_string(dataset.size()) + ".txt";
-
-    //Enter the target
-    int target;
-    cout << "Enter the target value: ";
-    cin >> target;
-
-    // Measure runtime
-    auto start_time = chrono::high_resolution_clock::now();
-
-    binary_search(dataset, target);
-
-    auto end_time = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::microseconds>(end_time - start_time);
-
-    //Save runtime 
-    ofstream file(filename_output, ios::app);
-    file << "Runtime: " << duration.count() << " microseconds" << endl; //To get best case get the middle element, get the first or last element to get worst case.
-    file.close();
+    std::cout << "Binary search performance saved to " << output_filename << std::endl;
 
     return 0;
-} 
+}

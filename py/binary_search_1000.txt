@@ -1,0 +1,4 @@
+Binary Search Performance for 1000 elements:
+Best Case Time: 0.000006600 seconds
+Average Case Time (over 1000 searches): 0.000001256 seconds
+Worst Case Time: 0.000002050 seconds

@@ -1,115 +1,124 @@
 #include <iostream>
 #include <fstream>
-#include <string>
-#include <vector>
 #include <sstream>
-#include <chrono>
+#include <vector>
+#include <string>
+#include <utility> // For std::pair
 
-using namespace std;
+// Define type aliases for clarity
+using DataRow = std::pair<int, std::string>;
+using DataSet = std::vector<DataRow>;
 
-string filename_output = "binary_search";
-int printout_count = 0;
+/**
+ * @brief Reads a sorted dataset from a CSV file.
+ * @param filename The name of the file to read.
+ * @return A vector of (int, string) pairs.
+ */
+DataSet read_sorted_dataset(const std::string& filename) {
+    DataSet data;
+    std::ifstream file(filename);
+    std::string line;
 
-vector<string> split(const string& str) {
-    vector<string> lines;
-    stringstream ss(str);
-    string line_part;
-
-    while (getline(ss, line_part, '/')) {
-        lines.push_back(line_part);
-    }
-
-    return lines;
-}
-
-vector<vector<string>> read_dataset(string &file_name) {
-    vector<vector<string>> lines;
-    ifstream file(file_name);
-    
     if (!file.is_open()) {
-        cerr << "Error: Could not open file " << file_name << endl;
-        return lines;
+        std::cerr << "Error: Could not open file " << filename << std::endl;
+        return data;
     }
 
-    string line;
+    while (std::getline(file, line)) {
+        if (line.empty()) continue;
 
-    while (getline(file, line)) {
-        if (line.empty()) {  // Skip empty lines although it should not happen
-            continue;
+        std::stringstream ss(line);
+        std::string key_str, value;
+        
+        if (std::getline(ss, key_str, ',') && std::getline(ss, value)) {
+            try {
+                data.emplace_back(std::stoi(key_str), value);
+            } catch (const std::invalid_argument& e) {
+                std::cerr << "Warning: Could not convert '" << key_str << "' to int. Skipping row." << std::endl;
+            }
         }
-        vector<string> line_split = split(line);
-        lines.push_back(line_split);
     }
-
     file.close();
-    return lines;
+    return data;
 }
 
-void save_dataset_step(vector<vector<string>> &dataset, int mid) {
-    ofstream file(filename_output, ios::app);  // open file in append mode
-    if (mid != -1) {
-        file << mid << ": " << dataset[mid][0] << "/" << dataset[mid][1] << endl;
-    } else{
-        file << mid << endl;
+/**
+ * @brief Writes the recorded binary search path to a file.
+ * @param filename The name of the output file.
+ * @param search_path A vector of strings representing the search steps.
+ */
+void write_search_path(const std::string& filename, const std::vector<std::string>& search_path) {
+    std::ofstream outfile(filename);
+    if (!outfile.is_open()) {
+        std::cerr << "Error: Could not open output file " << filename << std::endl;
+        return;
     }
-    file.close(); 
-}
 
-
-void binary_search(vector<vector<string>> &dataset, int target) {
-    int left = 0;
-    int right = dataset.size() - 1;
-    int mid;
-    int checkint;
-    while (left <= right) {
-        mid = (left + right) / 2;
-        checkint = stoi(dataset[mid][0]);
-        if (checkint == target) {
-            cout << "Target found at index: " << mid << endl;
-            return;
-        }
-        else if (checkint < target) {
-            left = mid + 1;
-        }
-        else {
-            right = mid - 1;
-        }
-        save_dataset_step(dataset, mid+1);
+    for (const auto& item : search_path) {
+        outfile << item << '\n';
     }
-    save_dataset_step(dataset, -1);
+    outfile.close();
 }
 
+/**
+ * @brief Performs a binary search and records the steps.
+ * @param arr The sorted dataset.
+ * @param target The integer key to search for.
+ * @param steps_list A vector (passed by reference) to store the search path.
+ * @return The index of the target, or -1 if not found.
+ */
+int binary_search_step(const DataSet& arr, int target, std::vector<std::string>& steps_list) {
+    int low = 0;
+    int high = arr.size() - 1;
+
+    while (low <= high) {
+        int mid = low + (high - low) / 2; // Avoids potential overflow
+        const DataRow& current_element = arr[mid];
+
+        // Record the step
+        steps_list.push_back(std::to_string(mid) + ": " + std::to_string(current_element.first) + "/" + current_element.second);
+
+        if (current_element.first == target) {
+            return mid; // Target found
+        } else if (current_element.first < target) {
+            low = mid + 1;
+        } else {
+            high = mid - 1;
+        }
+    }
+
+    steps_list.push_back("-1"); // Target not found
+    return -1; // Target not found
+}
 
 int main() {
+    std::string dataset_filename;
+    int target_value;
 
-    //Enter file name
-    string file_name;
-    cout << "Enter the file name: ";
-    cin >> file_name;
+    std::cout << "Enter sorted dataset filename (e.g., quick_sort_1000.csv): ";
+    std::cin >> dataset_filename;
+    
+    std::cout << "Enter target integer to search for: ";
+    std::cin >> target_value;
 
-    // Read the dataset and put it into a vector
-    vector<vector<string>> dataset = read_dataset(file_name);
-
-    if (dataset.empty()) {
-        cerr << "Error: Dataset is empty." << endl;
+    DataSet data = read_sorted_dataset(dataset_filename);
+    if (data.empty()) {
+        std::cout << "Dataset is empty or could not be read. Exiting." << std::endl;
         return 1;
     }
-    
-    // Print the total number of lines read
-    cout << "Lines Captured: " << dataset.size() << endl;
-    
-    // Print starting and ending lines
-    cout << "\nDataset starting from line:" << dataset[0][0] << "," << dataset[0][1] << endl;
-    cout << "Dataset ending at line:" << dataset[dataset.size()-1][0] << "," << dataset[dataset.size()-1][1] << endl;
 
-    //Enter the target
-    int target;
-    cout << "Enter the target value: ";
-    cin >> target;
+    std::vector<std::string> search_path;
+    int result_index = binary_search_step(data, target_value, search_path);
 
-    filename_output = "binary_search_step_" + to_string(target) + ".txt";
+    std::string output_filename = "binary_search_step_" + std::to_string(target_value) + ".txt";
+    write_search_path(output_filename, search_path);
 
-    binary_search(dataset, target);
-    
+    if (result_index != -1) {
+        std::cout << "Target " << target_value << " found at index " << result_index << ".\n";
+    } else {
+        std::cout << "Target " << target_value << " not found.\n";
+    }
+    std::cout << "Binary search steps saved to " << output_filename << std::endl;
+
     return 0;
-} 
+}
