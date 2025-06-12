@@ -76,7 +76,7 @@ int binary_search_step(const DataSet& arr, int target, std::vector<std::string>&
         const DataRow& current_element = arr[mid];
 
         // Record the step
-        steps_list.push_back(std::to_string(mid) + ": " + std::to_string(current_element.first) + "/" + current_element.second);
+        steps_list.push_back(std::to_string(mid + 1) + ": " + std::to_string(current_element.first) + "/" + current_element.second);
 
         if (current_element.first == target) {
             return mid; // Target found
@@ -114,7 +114,7 @@ int main() {
     write_search_path(output_filename, search_path);
 
     if (result_index != -1) {
-        std::cout << "Target " << target_value << " found at index " << result_index << ".\n";
+        std::cout << "Target " << target_value << " found at index " << result_index + 1 << ".\n";
     } else {
         std::cout << "Target " << target_value << " not found.\n";
     }
