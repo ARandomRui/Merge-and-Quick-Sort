@@ -10,8 +10,10 @@
 > dataset_generator.py     ✅</br>
 
 ## C++ files coded by @ARandomRui
-> 6 + 1 files in total
-> <sup>needed double checking for verification</sup>
+> merge_sort.py            ✅</br>
+> merge_sort_step.py       ✅</br>
+> quick_sort.py            ✅</br>
+> quick_sort_step.py       ✅</br>
 
 ## Presentation slides isnt done yet
 
