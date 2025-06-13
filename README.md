@@ -9,11 +9,14 @@
 > binary_search_step.py    ✅</br>
 > dataset_generator.py     ✅</br>
 
-## C++ files coded by @ARandomRui
-> merge_sort.py            ✅</br>
-> merge_sort_step.py       ✅</br>
-> quick_sort.py            ✅</br>
-> quick_sort_step.py       ✅</br>
+## C++ files coded by @ARandomRui + @notXenonForce
+> merge_sort.cpp           ✅</br>
+> merge_sort_step.cpp      ✅</br>
+> quick_sort.cpp           ✅</br>
+> quick_sort_step.cpp      ✅</br>
+> binary_search.cpp        ✅</br>
+> binary_search_step.cpp   ✅</br>
+> dataset_generator.cpp    ✅</br>
 
 ## Presentation slides isnt done yet
 
