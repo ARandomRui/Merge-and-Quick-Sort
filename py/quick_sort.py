@@ -1,5 +1,8 @@
 import csv
 import time
+import sys
+
+sys.setrecursionlimit(10**7)
 
 def read_dataset(filename):
     """Reads a slice of the dataset, returning a list of (int, str) tuples."""
