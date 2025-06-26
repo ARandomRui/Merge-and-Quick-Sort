@@ -3,6 +3,11 @@
 NOTE: PLEASE USE G++ COMPILER OR U MIGHT NOT RUN THIS PROGRAM*/
 using namespace std;
 
+struct Record {
+    int key;
+    string value;
+};
+
 vector<string> split(const string& str) {
     vector<string> parts;
     stringstream ss(str);
@@ -18,97 +23,58 @@ vector<string> split(const string& str) {
     return parts;
 }
 
-vector<vector<string>> read_dataset(const string& filename) {
-    vector<vector<string>> lines;
+vector<Record> read_dataset(const string& filename) {
+    vector<Record> records;
     ifstream file(filename);
-    
-    if (!file.is_open()) {
-        cerr << "Error: Could not open file " << filename << endl;
-        return lines;
-    }
-
     string line;
+
     while (getline(file, line)) {
-        if (line.empty()) { // Skip empty lines
-            continue;
-        }
-        vector<string> line_split = split(line);
-        if (line_split.size() == 2) { // Ensure line has both integer and string
-            lines.push_back(line_split);
-        } else {
-            cerr << "Warning: Skipping malformed line: " << line << endl;
+        if (line.empty()) continue;
+        stringstream ss(line);
+        string key_str, value;
+        if (getline(ss, key_str, ',') && getline(ss, value)) {
+            try {
+                int key = stoi(key_str);
+                records.push_back({key, value});
+            } catch (...) {
+                cerr << "Skipping malformed line: " << line << endl;
+            }
         }
     }
-
-    file.close();
-    return lines;
+    return records;
 }
 
-void save_dataset(const vector<vector<string>>& dataset, const string& output_filename) {
-    ofstream file(output_filename); // open file in write mode
-
-    if (!file.is_open()) {
-        cerr << "Error: Could not open output file " << output_filename << endl;
-        return;
-    }
-
+void save_dataset(const vector<Record>& dataset, const string& filename) {
+    ofstream file(filename); // open file in write mode
     for (size_t i = 0; i < dataset.size(); ++i) {
-        file << dataset[i][0] << "," << dataset[i][1];
-        if (i < dataset.size() - 1) { // Add newline for all but the last line
-            file << endl;
-        }
+        file << dataset[i].key << "," << dataset[i].value;
+        if (i + 1 != dataset.size()) file << '\n'; // Add newline for all but the last line
     }
-    file.close();
 }
 
-void merge(vector<vector<string>> &dataset, int left, int mid, int right) {
-    // Create temporary arrays for the two halves
-    vector<vector<string>> L_half;
-    for (int i = left; i <= mid; ++i) {
-        L_half.push_back(dataset[i]);
+void merge(vector<Record>& data, vector<Record>& temp, int left, int mid, int right) {
+    //More efficient compared to creating new vector in like lecture slides
+	int i = left, j = mid + 1, k = left;
+    while (i <= mid && j <= right) {
+        if (data[i].key <= data[j].key)
+            temp[k++] = data[i++];
+        else
+            temp[k++] = data[j++];
     }
-    vector<vector<string>> R_half;
-    for (int i = mid + 1; i <= right; ++i) {
-        R_half.push_back(dataset[i]);
-    }
-
-    int i = 0, j = 0, k = left;
-
-    while (i < L_half.size() && j < R_half.size()) {
-        // Compare based on integer value (first element of the pair)
-        if (stoi(L_half[i][0]) <= stoi(R_half[j][0])){ 
-            dataset[k] = L_half[i];
-            i++;
-        } else {
-            dataset[k] = R_half[j];
-            j++;
-        }
-        k++;
-    }
-
-    // Copy the remaining elements of L_half[], if any
-    while (i < L_half.size()) {
-        dataset[k] = L_half[i];
-        i++;
-        k++;
-    }
-    // Copy the remaining elements of R_half[], if any
-    while (j < R_half.size()) {
-        dataset[k] = R_half[j];
-        j++;
-        k++;
-    }
+    while (i <= mid) temp[k++] = data[i++];
+    while (j <= right) temp[k++] = data[j++];
+    for (int l = left; l <= right; ++l) data[l] = temp[l];
 }
 
 // The recursive merge_sort function
-void merge_sort(vector<vector<string>> &dataset, int left, int right) {
-    if (left < right){//left is basically the start, 0 and right is the end, so in 
+void merge_sort(vector<Record>& data, vector<Record>& temp, int left, int right) {
+    if (left < right) {//left is basically the start, 0 and right is the end, so in 
                         //most of the case right will always be bigger than
                         //left.. unless they're equal due to the mid equation
-        int mid = left + (right - left) / 2; //so if its X.5 it becomes X 5/2 = 2 
-        merge_sort(dataset, left, mid);
-        merge_sort(dataset, mid + 1, right);
-        merge(dataset, left, mid, right);
+        int mid = (left + right) / 2; //so if its X.5 it becomes X 5/2 = 2 
+        merge_sort(data, temp, left, mid);
+        merge_sort(data, temp, mid + 1, right);
+        merge(data, temp, left, mid, right);
     }
 }
 
@@ -118,7 +84,7 @@ int main() {
     cin >> dataset_input_filename;
 
     // Read the dataset
-    vector<vector<string>> dataset = read_dataset(dataset_input_filename);
+    vector<Record> dataset = read_dataset(dataset_input_filename);
     
     if (dataset.empty()) {
         cerr << "No data read. Exiting." << endl;
@@ -139,10 +105,12 @@ int main() {
 
     cout << "Dataset size: " << dataset.size() << " elements." << endl;
 
+	vector<Record> temp(dataset.size());
+
     // Measure running time
     auto start_timer = chrono::high_resolution_clock::now();
 
-    merge_sort(dataset, 0, dataset.size() - 1);
+    merge_sort(dataset, temp, 0, dataset.size() - 1);
 
     auto end_timer = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::milliseconds>(end_timer - start_timer);
