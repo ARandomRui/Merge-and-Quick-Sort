@@ -9,6 +9,8 @@
 #include <numeric>      // For std::accumulate
 #include <iomanip>      // For std::fixed and std::setprecision
 
+using namespace std;
+
 // Define type aliases for clarity, similar to Python's structure
 using DataRow = std::pair<int, std::string>;
 using DataSet = std::vector<DataRow>;
@@ -94,17 +96,23 @@ SearchResults run_multiple_searches(const DataSet& arr, int num_searches) {
     }
 
     // --- Best Case: Target is the middle element ---
-    int best_case_target = arr[n / 2].first;
-    auto start = std::chrono::high_resolution_clock::now();
-    binary_search(arr, best_case_target);
-    auto end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> best_duration = end - start;
-    results.best_case_time = best_duration.count();
+	int best_case_target = arr[n / 2].first;
+	const int best_case_trials = 10000;
+	double total_best_time = 0.0;
+	auto start = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
+	
+	for (int i = 0; i < best_case_trials; ++i) {
+		start = std::chrono::high_resolution_clock::now();
+		binary_search(arr, best_case_target);
+		end = std::chrono::high_resolution_clock::now();
+		total_best_time += std::chrono::duration<double>(end - start).count();
+	}
+
+	results.best_case_time = total_best_time / best_case_trials;
 
     // --- Worst Case: Target at ends or non-existent ---
     std::vector<int> worst_case_targets;
-    worst_case_targets.push_back(arr[0].first);            // Smallest element
-    worst_case_targets.push_back(arr[n - 1].first);      // Largest element
     worst_case_targets.push_back(arr[0].first - 1);        // Non-existent (smaller)
     worst_case_targets.push_back(arr[n - 1].first + 1);    // Non-existent (larger)
     

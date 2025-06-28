@@ -71,7 +71,7 @@ void merge_sort(vector<Record>& data, vector<Record>& temp, int left, int right)
     if (left < right) {//left is basically the start, 0 and right is the end, so in 
                         //most of the case right will always be bigger than
                         //left.. unless they're equal due to the mid equation
-        int mid = (left + right) / 2; //so if its X.5 it becomes X 5/2 = 2 
+        int mid = (left + right) / 2; //so if the total is 5 it becomes 5/2 = 2 (cpp ignores decimals) 
         merge_sort(data, temp, left, mid);
         merge_sort(data, temp, mid + 1, right);
         merge(data, temp, left, mid, right);
