@@ -2,7 +2,7 @@ import csv
 import time
 import sys
 
-sys.setrecursionlimit(10**7)
+sys.setrecursionlimit(10**8)
 
 def read_dataset(filename):
     """Reads a slice of the dataset, returning a list of (int, str) tuples."""
@@ -28,12 +28,30 @@ def quick_sort(arr, low, high):
         quick_sort(arr, low, pi - 1)
         quick_sort(arr, pi + 1, high)
 
+def median_of_three(arr, low, high):
+    """
+    Selects the median of the first, middle, and last elements as the pivot.
+    Moves this pivot to the 'high' position for the partition function.
+    """
+    mid = (low + high) // 2
+    
+    # Sort low, mid, high to put median at mid
+    if arr[low][0] > arr[mid][0]:
+        arr[low], arr[mid] = arr[mid], arr[low]
+    if arr[low][0] > arr[high][0]:
+        arr[low], arr[high] = arr[high], arr[low]
+    if arr[mid][0] > arr[high][0]:
+        arr[mid], arr[high] = arr[high], arr[mid]
+    
+    # Place the pivot (median) at the high position
+    arr[mid], arr[high] = arr[high], arr[mid]
+    return arr[high][0] # Return the pivot value
+
 def partition(arr, low, high):
     """
-    Partitions the array using the last element as pivot
-    Records the array state after partitioning.
+    Partitions the array using the chosen pivot.
     """
-    pivot = arr[high][0] # Pivot based on integer value
+    pivot = median_of_three(arr, low, high) # Use median-of-three pivot
     i = (low - 1)
     
     for j in range(low, high):
