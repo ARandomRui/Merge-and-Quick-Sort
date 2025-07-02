@@ -21,3 +21,5 @@
 ## Presentation slides isnt done yet
 
 <sub>dataset used is from sample dataset from lecturer</sub>
+
+2/7 Updated some python files to fix some errors, for assignment wise, maybe check the zip file
