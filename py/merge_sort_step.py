@@ -19,53 +19,45 @@ def write_steps_to_file(filename, steps_list):
         for step in steps_list:
             f.write(str(step) + '\n')
 
-def merge_sort_steps_recursive(arr, steps_list, original_arr_ref, start_idx_in_original):
-    """
-    Performs merge sort on arr and records steps.
-    Crucially, it updates a reference to the 'original_arr_ref' (the full slice being sorted)
-    and appends a copy of that full slice after each merge.
-    """
-    if len(arr) <= 1:
-        return arr
 
-    mid = len(arr) // 2
-    left_half = arr[:mid]
-    right_half = arr[mid:]
+def merge_sort(dataset, left, right, steps):
+    #Basically this keeps seperating the dataset to little segments
+    #Afterwards begin merging subarrays from the bottom up
+    if left < right:
+        mid = (left + right) // 2
+        merge_sort(dataset, left, mid, steps)
+        merge_sort(dataset, mid + 1, right, steps)
+        merge(dataset, left, mid, right, steps)
 
-    left_half = merge_sort_steps_recursive(left_half, steps_list, original_arr_ref, start_idx_in_original)
-    right_half = merge_sort_steps_recursive(right_half, steps_list, original_arr_ref, start_idx_in_original + mid)
+def merge(dataset, left, mid, right, steps):
+    #This arranges the individual element/sorted segments into left and right
+    #Then immediately write them back to the dataset
+    L_half = dataset[left:mid + 1]
+    R_half = dataset[mid + 1:right + 1]
 
-    merged_arr = merge(left_half, right_half)
-
-   
-    current_start = start_idx_in_original
-    current_end = start_idx_in_original + len(merged_arr)
-
-   
-    for i in range(len(merged_arr)):
-        original_arr_ref[current_start + i] = merged_arr[i]
-        
-    
-    steps_list.append(list(original_arr_ref)) 
-
-    return merged_arr
-
-def merge(left, right):
-    """Merges two sorted lists."""
-    result = []
     i = j = 0
+    k = left
 
-    while i < len(left) and j < len(right):
-        if left[i][0] < right[j][0]: # Compare based on integer value
-            result.append(left[i])
+    while i < len(L_half) and j < len(R_half):
+        if L_half[i][0] <= R_half[j][0]:
+            dataset[k] = L_half[i]
             i += 1
         else:
-            result.append(right[j])
+            dataset[k] = R_half[j]
             j += 1
+        k += 1
 
-    result.extend(left[i:])
-    result.extend(right[j:])
-    return result
+    while i < len(L_half):
+        dataset[k] = L_half[i]
+        i += 1
+        k += 1
+    while j < len(R_half):
+        dataset[k] = R_half[j]
+        j += 1
+        k += 1
+
+    # Save current full state after merge
+    steps.append(list(dataset))
 
 if __name__ == "__main__":
     dataset_filename = input("Enter dataset filename (e.g., dataset_1000000.csv): ")
@@ -77,11 +69,10 @@ if __name__ == "__main__":
     array_in_progress = list(initial_data_slice)
     
     steps = [list(initial_data_slice)]
-    print(f"Initial data slice: {initial_data_slice}")
-   
-    sorted_data_result = merge_sort_steps_recursive(list(initial_data_slice), steps, array_in_progress, 0)
+    
+    array_in_progress = list(initial_data_slice)
+    merge_sort(array_in_progress, 0, len(array_in_progress) - 1, steps)
     
     output_filename = f"merge_sort_step_{start_row}_{end_row}.txt" 
     write_steps_to_file(output_filename, steps)
     print(f"Merge sort steps saved to {output_filename}")
-    print(f"Final sorted slice: {sorted_data_result}")
